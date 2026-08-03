@@ -40,7 +40,8 @@ jobs:
             -RedirectStandardOutput "$env:RUNNER_TEMP\app.stdout.log" `
             -RedirectStandardError "$env:RUNNER_TEMP\app.stderr.log"
           Start-Sleep -Seconds 30
-          if ($process.HasExited) {
+          $exitedDuringSmoke = $process.HasExited
+          if ($exitedDuringSmoke) {
             "AppExitCode=$($process.ExitCode)" | Add-Content "$env:RUNNER_TEMP\launch.txt"
           } else {
             'AppStillRunning=true' | Add-Content "$env:RUNNER_TEMP\launch.txt"
@@ -50,7 +51,7 @@ jobs:
           if (Test-Path $diagnostics) { Copy-Item $diagnostics "$env:RUNNER_TEMP\startup-and-runtime-errors.log" }
           $diagnosticText = if (Test-Path $diagnostics) { Get-Content $diagnostics -Raw } else { '' }
           if ($diagnosticText -match 'CORE_PROCESS_EXITED') { throw 'CORE_PROCESS_EXITED_ON_CLEAN_WINDOWS' }
-          if ($process.HasExited) { throw "APPLICATION_EXITED_DURING_SMOKE:$($process.ExitCode)" }
+          if ($exitedDuringSmoke) { throw "APPLICATION_EXITED_DURING_SMOKE:$($process.ExitCode)" }
 
       - name: Print captured diagnostics
         if: always()

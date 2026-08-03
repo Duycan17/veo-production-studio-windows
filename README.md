@@ -1,10 +1,11 @@
 # Veo Production Studio for Windows x64
 
-## Version 0.2.2
+## Version 0.2.3
 
 - Captures the original core-process bootstrap exception and stack trace instead of reporting only exit code 1.
 - Waits for an explicit `CORE_READY` message before sending database requests.
 - Uses exponential restart backoff and shows specific guidance for database locks, inaccessible AppData, and corrupt SQLite data.
+- Ignores expected worker shutdown messages, prevents late replies from becoming unhandled rejections, and retries a transiently missing analysis frame on Windows.
 
 ## Requirements
 
@@ -17,11 +18,11 @@ FFmpeg, FFprobe, Electron, Chromium, and their required Windows DLL files are in
 
 ## Install
 
-1. Download `Veo-Production-Studio-Setup-0.2.2-x64.exe` and `SHA256SUMS.txt` from the public release.
+1. Download `Veo-Production-Studio-Setup-0.2.3-x64.exe` and `SHA256SUMS.txt` from the public release.
 2. Verify the SHA-256 checksum in PowerShell:
 
    ```powershell
-   Get-FileHash .\Veo-Production-Studio-Setup-0.2.2-x64.exe -Algorithm SHA256
+   Get-FileHash .\Veo-Production-Studio-Setup-0.2.3-x64.exe -Algorithm SHA256
    ```
 
 3. Run the installer. This friend-test build is not Authenticode-signed, so Windows SmartScreen may say **Unknown publisher**. Continue only when the checksum matches the public release.

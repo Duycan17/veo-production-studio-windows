@@ -1,0 +1,78 @@
+name: Windows release smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  launch:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      INSTALLER_URL: https://github.com/Duycan17/veo-production-studio-windows/releases/download/v0.2.1/Veo-Production-Studio-Setup-0.2.1-x64.exe
+      INSTALLER_SHA256: 8a4cc5f754249cea02f8a3e0170395fdc0c69649b07994334eb5dc22d10c6c6c
+    steps:
+      - name: Download, verify, and install
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest $env:INSTALLER_URL -OutFile "$env:RUNNER_TEMP\VeoSetup.exe"
+          $actual = (Get-FileHash "$env:RUNNER_TEMP\VeoSetup.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:INSTALLER_SHA256) { throw "INSTALLER_CHECKSUM_MISMATCH:$actual" }
+          $installer = Start-Process "$env:RUNNER_TEMP\VeoSetup.exe" -ArgumentList '/S' -PassThru -Wait
+          if ($installer.ExitCode -ne 0) { throw "INSTALLER_EXITED:$($installer.ExitCode)" }
+
+      - name: Launch installed application
+        id: launch
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $roots = @($env:LOCALAPPDATA, $env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ }
+          $exe = Get-ChildItem $roots -Filter 'Veo Production Studio.exe' -File -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $exe) { throw 'INSTALLED_EXECUTABLE_NOT_FOUND' }
+          "Executable=$exe" | Set-Content "$env:RUNNER_TEMP\launch.txt"
+          $env:ELECTRON_ENABLE_LOGGING = '1'
+          $process = Start-Process $exe -PassThru `
+            -RedirectStandardOutput "$env:RUNNER_TEMP\app.stdout.log" `
+            -RedirectStandardError "$env:RUNNER_TEMP\app.stderr.log"
+          Start-Sleep -Seconds 30
+          if ($process.HasExited) {
+            "AppExitCode=$($process.ExitCode)" | Add-Content "$env:RUNNER_TEMP\launch.txt"
+          } else {
+            'AppStillRunning=true' | Add-Content "$env:RUNNER_TEMP\launch.txt"
+            Stop-Process -Id $process.Id -Force
+          }
+          $diagnostics = Join-Path $env:APPDATA 'Veo Production Studio\diagnostics\startup-and-runtime-errors.log'
+          if (Test-Path $diagnostics) { Copy-Item $diagnostics "$env:RUNNER_TEMP\startup-and-runtime-errors.log" }
+          $diagnosticText = if (Test-Path $diagnostics) { Get-Content $diagnostics -Raw } else { '' }
+          if ($diagnosticText -match 'CORE_PROCESS_EXITED') { throw 'CORE_PROCESS_EXITED_ON_CLEAN_WINDOWS' }
+          if ($process.HasExited) { throw "APPLICATION_EXITED_DURING_SMOKE:$($process.ExitCode)" }
+
+      - name: Print captured diagnostics
+        if: always()
+        shell: pwsh
+        run: |
+          Get-ChildItem $env:RUNNER_TEMP -Filter '*.log' -File | ForEach-Object {
+            Write-Host "--- $($_.Name)"
+            Get-Content $_.FullName -ErrorAction Continue
+          }
+          Get-Content "$env:RUNNER_TEMP\launch.txt" -ErrorAction Continue
+
+      - name: Upload captured diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-smoke-logs
+          path: |
+            ${{ runner.temp }}/*.log
+            ${{ runner.temp }}/launch.txt
+          if-no-files-found: warn
+
+      - name: Enforce launch result
+        if: steps.launch.outcome != 'success'
+        shell: pwsh
+        run: throw 'Windows release smoke failed; inspect windows-release-smoke-logs.'

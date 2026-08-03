@@ -1,0 +1,102 @@
+name: Windows core diagnostics smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [clean, live-lock, corrupt-database]
+    env:
+      INSTALLER_URL: https://github.com/Duycan17/veo-production-studio-windows/releases/download/v0.2.2/Veo-Production-Studio-Setup-0.2.2-x64.exe
+      INSTALLER_SHA256: 9a6e480956147890d8c530650a8ee486b2ff313314c6e1ed3f48fbc54aa904ae
+    steps:
+      - name: Install release
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest $env:INSTALLER_URL -OutFile "$env:RUNNER_TEMP\VeoSetup.exe"
+          $actual = (Get-FileHash "$env:RUNNER_TEMP\VeoSetup.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:INSTALLER_SHA256) { throw "INSTALLER_CHECKSUM_MISMATCH:$actual" }
+          $installer = Start-Process "$env:RUNNER_TEMP\VeoSetup.exe" -ArgumentList '/S' -PassThru -Wait
+          if ($installer.ExitCode -ne 0) { throw "INSTALLER_EXITED:$($installer.ExitCode)" }
+
+      - name: Inject local database condition
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $data = Join-Path $env:APPDATA 'Veo Production Studio'
+          New-Item -ItemType Directory -Path $data -Force | Out-Null
+          if ('${{ matrix.scenario }}' -eq 'live-lock') {
+            $holder = Start-Process pwsh -ArgumentList '-NoProfile', '-Command', 'Start-Sleep -Seconds 180' -PassThru
+            @{ pid = $holder.Id; token = 'fault-injection' } | ConvertTo-Json -Compress |
+              Set-Content (Join-Path $data 'studio.db.writer.lock') -Encoding utf8
+            $holder.Id | Set-Content "$env:RUNNER_TEMP\lock-holder.pid"
+          }
+          if ('${{ matrix.scenario }}' -eq 'corrupt-database') {
+            [IO.File]::WriteAllBytes((Join-Path $data 'studio.db'), [Text.Encoding]::UTF8.GetBytes('not a sqlite database'))
+          }
+
+      - name: Launch and assert diagnostics
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $roots = @($env:LOCALAPPDATA, $env:ProgramFiles, ${env:ProgramFiles(x86)}) | Where-Object { $_ }
+          $exe = Get-ChildItem $roots -Filter 'Veo Production Studio.exe' -File -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $exe) { throw 'INSTALLED_EXECUTABLE_NOT_FOUND' }
+          $env:ELECTRON_ENABLE_LOGGING = '1'
+          $process = Start-Process $exe -PassThru `
+            -RedirectStandardOutput "$env:RUNNER_TEMP\app.stdout.log" `
+            -RedirectStandardError "$env:RUNNER_TEMP\app.stderr.log"
+          Start-Sleep -Seconds 20
+          if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+          $diagnostics = Join-Path $env:APPDATA 'Veo Production Studio\diagnostics\startup-and-runtime-errors.log'
+          if (Test-Path $diagnostics) { Copy-Item $diagnostics "$env:RUNNER_TEMP\startup-and-runtime-errors.log" }
+          $text = if (Test-Path $diagnostics) { Get-Content $diagnostics -Raw } else { '' }
+          switch ('${{ matrix.scenario }}') {
+            'clean' {
+              if ($text -match 'CORE_PROCESS_EXITED') { throw 'CLEAN_WINDOWS_REPORTED_CORE_PROCESS_EXITED' }
+            }
+            'live-lock' {
+              if ($text -notmatch 'DATABASE_WRITER_ALREADY_ACTIVE') { throw 'LIVE_LOCK_ROOT_CAUSE_WAS_NOT_RECORDED' }
+            }
+            'corrupt-database' {
+              if ($text -notmatch 'not a database|SQLITE_(?:NOTADB|CORRUPT)|database disk image is malformed') {
+                throw 'CORRUPT_DATABASE_ROOT_CAUSE_WAS_NOT_RECORDED'
+              }
+            }
+          }
+
+      - name: Print diagnostics
+        if: always()
+        shell: pwsh
+        run: |
+          Get-ChildItem $env:RUNNER_TEMP -Filter '*.log' -File | ForEach-Object {
+            Write-Host "--- $($_.Name)"
+            Get-Content $_.FullName -ErrorAction Continue
+          }
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-diagnostics-${{ matrix.scenario }}
+          path: ${{ runner.temp }}/*.log
+          if-no-files-found: warn
+
+      - name: Stop lock holder
+        if: always() && matrix.scenario == 'live-lock'
+        shell: pwsh
+        run: |
+          $pidFile = "$env:RUNNER_TEMP\lock-holder.pid"
+          if (Test-Path $pidFile) {
+            Stop-Process -Id ([int](Get-Content $pidFile)) -Force -ErrorAction SilentlyContinue
+          }

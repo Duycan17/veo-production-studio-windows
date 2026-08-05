@@ -11,8 +11,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     env:
-      INSTALLER_URL: https://github.com/Duycan17/veo-production-studio-windows/releases/download/v0.2.9/Veo-Production-Studio-Setup-0.2.9-x64.exe
-      INSTALLER_SHA256: f4341f45fe17b37dea74f0725d72de136392f5551ae8755f3edd4c101d1fcf9f
+      INSTALLER_URL: https://github.com/Duycan17/veo-production-studio-windows/releases/download/v0.2.10/Veo-Production-Studio-Setup-0.2.10-x64.exe
+      INSTALLER_SHA256: ba82d7ba4fab2110ca1e46d8f66f0d0cf334789af9bfe130909a1fc69a03d3ec
     steps:
       - name: Download, verify, and install
         shell: pwsh

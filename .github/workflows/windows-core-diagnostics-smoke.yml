@@ -15,8 +15,8 @@ jobs:
       matrix:
         scenario: [clean, live-lock, corrupt-database]
     env:
-      INSTALLER_URL: https://github.com/Duycan17/veo-production-studio-windows/releases/download/v0.2.4/Veo-Production-Studio-Setup-0.2.4-x64.exe
-      INSTALLER_SHA256: f35947d8ed3373c10ae219c2ee52e0c9ec019780201edeed3a7b15b29953c1a7
+      INSTALLER_URL: https://github.com/Duycan17/veo-production-studio-windows/releases/download/v0.2.7/Veo-Production-Studio-Setup-0.2.7-x64.exe
+      INSTALLER_SHA256: 0f87d530aea8d3a6182513a06210a11bcb746830ebe4bd7aa69c0ff6da8ec696
     steps:
       - name: Install release
         shell: pwsh

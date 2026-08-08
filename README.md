@@ -37,8 +37,8 @@ The current macOS package is an unsigned internal-test build for Apple Silicon
 current package does not support Intel Macs (`x86_64`) because the approved
 Intel FFmpeg runtime is not included.
 
-The macOS DMG and ZIP are available from the
-[Veo Production Studio v0.2.10 release](https://github.com/Duycan17/Outsource-tool/releases/tag/v0.2.10).
+The macOS DMG and ZIP are available from this repository's
+[Veo Production Studio v0.2.10 release](https://github.com/Duycan17/veo-production-studio-windows/releases/tag/v0.2.10).
 The DMG is recommended. GitHub may display the files as
 `Veo.Production.Studio-0.2.10-arm64.dmg` and
 `Veo.Production.Studio-0.2.10-arm64-mac.zip`.

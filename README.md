@@ -135,6 +135,31 @@ contain the same Apple Silicon application.
 Keep all application passwords, Google cookies, and session tokens private. Do
 not upload them with screenshots, diagnostics, or release files.
 
+## Chrome extension session export
+
+The release also includes `Veo-Studio-Google-Session-Export-0.1.0.zip`. This is
+an unpacked Manifest V3 extension for transferring a user-approved,
+encrypted Google/Gemini/Flow session into Veo Production Studio. It is not a
+Chrome Web Store installation.
+
+1. Download and verify the ZIP using `SHA256SUMS.txt`.
+2. Extract it to a trusted local folder. Do not edit or upload the extracted
+   files.
+3. Open `chrome://extensions` in Chrome or Edge, enable **Developer mode**,
+   choose **Load unpacked**, and select the extracted folder.
+4. In that same browser profile, open Gemini and Google Flow and finish
+   sign-in/authorization. Flow should show the signed-in workspace, such as
+   **New project**.
+5. Open the extension and choose **Copy encrypted session**.
+6. In Veo Studio → **Tài khoản Google**, choose **Thêm tài khoản Google** →
+   **Dán cookie / session**, paste the token beginning with `VEOCLIP1.`, and
+   click **Dán và nhập session**.
+
+The extension uses only the `cookies` and `clipboardWrite` permissions plus
+explicit Google/Flow host permissions. It does not upload the token. The
+copied value is a bearer credential: keep it private and clear the clipboard
+after importing.
+
 ## Visible diagnostics
 
 The application performs startup checks before opening the main window. Missing files, broken FFmpeg DLLs, invalid service configuration, or unwritable data/output folders open a native Windows error dialog and stop startup safely.

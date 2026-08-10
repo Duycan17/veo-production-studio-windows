@@ -1,6 +1,10 @@
 # Veo Production Studio for Windows x64
 
-## Version 0.2.11
+## Version 0.2.12
+
+- Verifies every visible match of Google sign-in markers instead of trusting the first hidden DOM match.
+- Checks Gemini in the account worker before publishing a session as `VALID`, so Flow-only cookies fail at import instead of failing later in script or analysis.
+- The session-export extension checks the active Gemini prompt surface and visible sign-in state before copying a token.
 
 - Captures the original core-process bootstrap exception and stack trace instead of reporting only exit code 1.
 - Waits for an explicit `CORE_READY` message before sending database requests.
@@ -20,17 +24,17 @@ FFmpeg, FFprobe, Electron, Chromium, and their required Windows DLL files are in
 
 ## Install
 
-1. Download `Veo-Production-Studio-Setup-0.2.11-x64.exe` and `SHA256SUMS.txt` from the public release.
+1. Download `Veo-Production-Studio-Setup-0.2.12-x64.exe` and `SHA256SUMS.txt` from the public release.
 2. Verify the SHA-256 checksum in PowerShell:
 
    ```powershell
-   Get-FileHash .\Veo-Production-Studio-Setup-0.2.11-x64.exe -Algorithm SHA256
+   Get-FileHash .\Veo-Production-Studio-Setup-0.2.12-x64.exe -Algorithm SHA256
    ```
 
    Expected Windows installer SHA-256:
 
    ```text
-   d4c9b2fd96922f982e8044d330ad8257bc9e2e16b8d9b8891ad163c53e69dec9
+   8d9c9ad724c7194ab25ac2928f5448a61ea657cea7251e82caffdd65c5e7f049
    ```
 
 3. Run the installer. This friend-test build is not Authenticode-signed, so Windows SmartScreen may say **Unknown publisher**. Continue only when the checksum matches the public release.
@@ -45,10 +49,10 @@ current package does not support Intel Macs (`x86_64`) because the approved
 Intel FFmpeg runtime is not included.
 
 The macOS DMG and ZIP are available from this repository's
-[Veo Production Studio v0.2.11 release](https://github.com/Duycan17/veo-production-studio-windows/releases/tag/v0.2.11).
+[Veo Production Studio v0.2.12 release](https://github.com/Duycan17/veo-production-studio-windows/releases/tag/v0.2.12).
 The DMG is recommended. GitHub may display the files as
-`Veo.Production.Studio-0.2.11-arm64.dmg` and
-`Veo.Production.Studio-0.2.11-arm64-mac.zip`.
+`Veo.Production.Studio-0.2.12-arm64.dmg` and
+`Veo.Production.Studio-0.2.12-arm64-mac.zip`.
 
 ### Requirements
 
@@ -75,19 +79,19 @@ After downloading the DMG, verify its checksum before opening it:
 
 ```bash
 cd ~/Downloads
-shasum -a 256 'Veo.Production.Studio-0.2.11-arm64.dmg'
+shasum -a 256 'Veo.Production.Studio-0.2.12-arm64.dmg'
 ```
 
 Expected DMG SHA-256:
 
 ```text
-8797e500f906e8a4140650e1a56c280b1ca172d0b7b77f6bbd2364af77ca9c97
+7b92d161b0f1340aa96dc90042cb3bd7a8b2b34ee6c266e40ae1c0c8be59850a
 ```
 
 For the ZIP alternative, the expected SHA-256 is:
 
 ```text
-c05b194f67764386a099c0baac96ef99659a0ffba02d72ddf9dbe003e61aabb9
+eb28c758411cd8093ff4eb46ef45a010114ceb8c86c0c8533497b1783dd29da7
 ```
 
 Do not install an artifact whose checksum does not match.
@@ -144,7 +148,7 @@ not upload them with screenshots, diagnostics, or release files.
 
 ## Chrome extension session export
 
-The release also includes `Veo-Studio-Google-Session-Export-0.1.0.zip`. This is
+The release also includes `Veo-Studio-Google-Session-Export-0.1.1.zip`. This is
 an unpacked Manifest V3 extension for transferring a user-approved,
 encrypted Google/Gemini/Flow session into Veo Production Studio. It is not a
 Chrome Web Store installation.
@@ -155,15 +159,17 @@ Chrome Web Store installation.
 3. Open `chrome://extensions` in Chrome or Edge, enable **Developer mode**,
    choose **Load unpacked**, and select the extracted folder.
 4. In that same browser profile, open Gemini and Google Flow and finish
-   sign-in/authorization. Flow should show the signed-in workspace, such as
-   **New project**.
-5. Open the extension and choose **Copy encrypted session**.
+   sign-in/authorization. Gemini must show its prompt box and Flow should show
+   the signed-in workspace, such as **New project**. Keep Gemini as the active
+   tab.
+5. Open the extension and choose **Copy encrypted session**. The extension
+   rejects a visible Gemini sign-in state or a missing prompt surface.
 6. In Veo Studio → **Tài khoản Google**, choose **Thêm tài khoản Google** →
    **Dán cookie / session**, paste the token beginning with `VEOCLIP1.`, and
    click **Dán và nhập session**.
 
-The extension uses only the `cookies` and `clipboardWrite` permissions plus
-explicit Google/Flow host permissions. It does not upload the token. The
+The extension uses `cookies`, `clipboardWrite`, `activeTab`, and `scripting`,
+plus explicit Google/Flow host permissions. It does not upload the token. The
 copied value is a bearer credential: keep it private and clear the clipboard
 after importing.
 

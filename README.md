@@ -1,12 +1,13 @@
 # Veo Production Studio for Windows x64
 
-## Version 0.2.10
+## Version 0.2.11
 
 - Captures the original core-process bootstrap exception and stack trace instead of reporting only exit code 1.
 - Waits for an explicit `CORE_READY` message before sending database requests.
 - Uses exponential restart backoff and shows specific guidance for database locks, inaccessible AppData, and corrupt SQLite data.
 - Ignores expected worker shutdown messages, prevents late replies from becoming unhandled rejections, and retries a transiently missing analysis frame on Windows.
 - Keeps already-claimed work alive during a temporary auth-server outage and logs non-result-affecting background cleanup without interrupting the UI.
+- Renews worker leases and heartbeats for generation, script generation, and reference analysis, and safely requeues stale local work after a worker restart instead of leaving it stuck in `RUNNING`.
 
 ## Requirements
 
@@ -19,11 +20,17 @@ FFmpeg, FFprobe, Electron, Chromium, and their required Windows DLL files are in
 
 ## Install
 
-1. Download `Veo-Production-Studio-Setup-0.2.10-x64.exe` and `SHA256SUMS.txt` from the public release.
+1. Download `Veo-Production-Studio-Setup-0.2.11-x64.exe` and `SHA256SUMS.txt` from the public release.
 2. Verify the SHA-256 checksum in PowerShell:
 
    ```powershell
-   Get-FileHash .\Veo-Production-Studio-Setup-0.2.4-x64.exe -Algorithm SHA256
+   Get-FileHash .\Veo-Production-Studio-Setup-0.2.11-x64.exe -Algorithm SHA256
+   ```
+
+   Expected Windows installer SHA-256:
+
+   ```text
+   d4c9b2fd96922f982e8044d330ad8257bc9e2e16b8d9b8891ad163c53e69dec9
    ```
 
 3. Run the installer. This friend-test build is not Authenticode-signed, so Windows SmartScreen may say **Unknown publisher**. Continue only when the checksum matches the public release.
@@ -38,10 +45,10 @@ current package does not support Intel Macs (`x86_64`) because the approved
 Intel FFmpeg runtime is not included.
 
 The macOS DMG and ZIP are available from this repository's
-[Veo Production Studio v0.2.10 release](https://github.com/Duycan17/veo-production-studio-windows/releases/tag/v0.2.10).
+[Veo Production Studio v0.2.11 release](https://github.com/Duycan17/veo-production-studio-windows/releases/tag/v0.2.11).
 The DMG is recommended. GitHub may display the files as
-`Veo.Production.Studio-0.2.10-arm64.dmg` and
-`Veo.Production.Studio-0.2.10-arm64-mac.zip`.
+`Veo.Production.Studio-0.2.11-arm64.dmg` and
+`Veo.Production.Studio-0.2.11-arm64-mac.zip`.
 
 ### Requirements
 
@@ -68,19 +75,19 @@ After downloading the DMG, verify its checksum before opening it:
 
 ```bash
 cd ~/Downloads
-shasum -a 256 'Veo.Production.Studio-0.2.10-arm64.dmg'
+shasum -a 256 'Veo.Production.Studio-0.2.11-arm64.dmg'
 ```
 
 Expected DMG SHA-256:
 
 ```text
-497999ce3045baabf010ecababefc467ee03c2448376fd947e41e786d2cabbd1
+8797e500f906e8a4140650e1a56c280b1ca172d0b7b77f6bbd2364af77ca9c97
 ```
 
 For the ZIP alternative, the expected SHA-256 is:
 
 ```text
-c98f3f5898834afbce154fb7df5f41f3a17b06d5bd8360c98b5a519d9ec7445c
+c05b194f67764386a099c0baac96ef99659a0ffba02d72ddf9dbe003e61aabb9
 ```
 
 Do not install an artifact whose checksum does not match.

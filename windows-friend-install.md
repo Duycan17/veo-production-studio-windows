@@ -1,24 +1,24 @@
 # Veo Production Studio for Windows x64
 
-## Version 0.2.12
+## Version 0.2.13
 
 This is an unsigned friend-test build. Windows SmartScreen may show
 **Unknown publisher**; verify the checksum before continuing.
 
 ## Install
 
-1. Download `Veo-Production-Studio-Setup-0.2.12-x64.exe` and
+1. Download `Veo-Production-Studio-Setup-0.2.13-x64.exe` and
    `SHA256SUMS.txt` from the public release.
 2. Verify it in PowerShell:
 
    ```powershell
-   Get-FileHash .\Veo-Production-Studio-Setup-0.2.12-x64.exe -Algorithm SHA256
+   Get-FileHash .\Veo-Production-Studio-Setup-0.2.13-x64.exe -Algorithm SHA256
    ```
 
    The expected SHA-256 is:
 
    ```text
-   8d9c9ad724c7194ab25ac2928f5448a61ea657cea7251e82caffdd65c5e7f049
+   4d1c2db79be11b0d2b0c3b7553724e406bc90375087501e048f648a979103653
    ```
 
 3. Run the installer and choose the installation folder.
